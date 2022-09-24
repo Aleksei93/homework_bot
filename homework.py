@@ -36,102 +36,122 @@ logger.addHandler(handler)
 
 
 def send_message(bot, message):
-    """Отправляет сообщение в Telegram."""
+    """Отправка сообщения в Телегу."""
     try:
-        bot.send_message(TELEGRAM_CHAT_ID, text=message)
-        logger.info('Бот отправил сообщение')
-    except telegram.error.TelegramError(message):
-        logger.error('Сообщение не отправлено !')
-        raise Exception('Сообщение не отправлено !')
+        bot.send_message(TELEGRAM_CHAT_ID, message)
+        logger.info('Успешная отправка сообщения.')
+    except Exception as error:
+        raise SystemError(f'Не отправляются сообщения, {error}')
 
 
 def get_api_answer(current_timestamp):
-    """делает запрос к  эндпоинту API-сервиса."""
+    """запрос статуса домашней работы."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
-        response = requests.get(
-            ENDPOINT, headers=HEADERS, params=params)
-    except Exception:
-        logging.exception('Запрос от сервера не получен.')
-        raise ErorrAPI('Запрос от сервера не получен.')
-    if response.status_code != HTTPStatus.OK:
-        raise ErorrAPI('Сервер практикума не доступен')
-    return response.json()
+        homework_statuses = requests.get(ENDPOINT,
+                                         headers=HEADERS,
+                                         params=params)
+    except Exception as error:
+        raise SystemError(f'Ошибка получения request, {error}')
+    else:
+        if homework_statuses.status_code == HTTPStatus.OK:
+            logger.info('успешное получение Эндпоинта')
+            homework = homework_statuses.json()
+            if 'error' in homework:
+                raise SystemError(f'Ошибка json, {homework["error"]}')
+            elif 'code' in homework:
+                raise SystemError(f'Ошибка json, {homework["code"]}')
+            else:
+                return homework
+        elif homework_statuses.status_code == HTTPStatus.REQUEST_TIMEOUT:
+            raise SystemError(f'Ошибка код {homework_statuses.status_code}')
+        elif homework_statuses.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
+            raise SystemError(f'Ошибка код {homework_statuses.status_code}')
+        # не понимаю зачем проверять отдельно 408 и 500, если всё попадёт в
+        # else. не проходили тесты, пока не добавил
+        else:
+            raise SystemError(
+                f'Недоступен Эндпоинт, код {homework_statuses.status_code}')
 
 
 def check_response(response):
-    """проверяет ответ API на корректность."""
-    if not isinstance(response, dict):
-        logging.error('Тип  API не словарь')
-        raise ErorrAPI('Тип  API не словарь')
-    if 'homeworks' not in response:
-        logging.info('Ответ API не содержит homeworks')
-        raise KeyError('Ключ не содержит homeworks')
-    if 'current_date' not in response:
-        logging.error('Ответ API не содержит current_date')
-        raise KeyError('отсустсвует ключ current_date')
-    if type(response['homeworks']) is not list:
-        logging.info('Получен неправильный тип')
-        raise Exception('Список отсуствует')
-    return response['homeworks']
+    """проверка ответа на корректность."""
+    if type(response) == dict:
+        response['current_date']
+        # -------------------замечание------------------------------
+        # если в ответе не окажется ключа 'homeworks', то упадём тут с ошибкой
+        # -------------------ответ------------------------------
+        # не упадёт с ошибкой, а выпадет в except функции main()
+        # сделал осознано, чтобы не городить условия проверки из if-else
+        # в задании обозначена необходимость проверки этих ключей
+        homeworks = response['homeworks']
+        if type(homeworks) == list:
+            return homeworks
+        else:
+            raise SystemError('Тип ключа homeworks не list')
+    else:
+        raise TypeError('Ответ от Домашки не словарь')
 
 
 def parse_status(homework):
-    """Извлекает из информации о  домашней работе статус."""
-    try:
-        homework_name = homework.get('homework_name')
-        homework_status = homework.get('status')
-        verdict = HOMEWORK_STATUSES[homework_status]
-    except Exception:
-        logging.info('Неисзвестный статус.')
+    """Парсинг информации о домашке."""
+    homework_name = homework.get('homework_name')
+    homework_status = homework.get('status')
 
-    return f'Изменился статус проверки работы {homework_name}. {verdict}'
+    if homework_name is not None and homework_status is not None:
+        if homework_status in HOMEWORK_STATUSES:
+            verdict = HOMEWORK_STATUSES.get(homework_status)
+            return ('Изменился статус проверки '
+                    + f'работы "{homework_name}". {verdict}')
+        else:
+            raise SystemError('неизвестный статус')
+    else:
+        raise KeyError('нет нужных ключей в словаре')
 
 
 def check_tokens():
-    """Проверяет доступность переменных окружения."""
-    tokens = {
-        'PRACTICUM_TOKEN': PRACTICUM_TOKEN,
-        'TELEGRAM_TOKEN': TELEGRAM_TOKEN,
-        'TELEGRAM_CHAT_ID': TELEGRAM_CHAT_ID
-    }
-    for key, value in tokens.items():
-        if value is None:
-            logger.critical(f'Отсутствует переменная окружения {key}.')
-            return False
-    return True
+    """Проверка доступности необходимых токенов."""
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        logger.critical('Ошибка импорта токенов Telegramm.')
+        return False
+    elif not PRACTICUM_TOKEN:
+        raise SystemError('Ошибка импорта токенов Домашки.')
+    else:
+        return True
 
 
 def main():
-    """Основная логика работы бота."""
+    """Бот для отслеживания статуса домашки на Яндекс.Домашка."""
+    global old_message
     if not check_tokens():
-        sys.exit
+        raise SystemExit('Я вышел')
+
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    current_timestamp = int(time.time())
-    prev_message = ''
-    errors = True
+    current_timestamp = int(time.time()) - RETRY_TIME
 
     while True:
         try:
+            if type(current_timestamp) is not int:
+                raise SystemError('В функцию передана не дата')
             response = get_api_answer(current_timestamp)
-            homework = check_response(response)
-            message = parse_status(homework)
-            if message != prev_message:
-                prev_message = message
-                send_message(bot, message)
-                current_timestamp = response['current_date']
+            response = check_response(response)
+
+            if len(response) > 0:
+                homework_status = parse_status(response[0])
+                if homework_status is not None:
+                    send_message(bot, homework_status)
             else:
-                current_timestamp = int(time.time())
-                time.sleep(RETRY_TIME)
+                logger.debug('нет новых статусов')
+
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            if errors:
-                errors = False
-                send_message(bot, message)
-            logger.critical(message)
-            send_message(bot, 'Сбой в работе программы')
+            logger.error(message)
+            if message != old_message:
+                bot.send_message(TELEGRAM_CHAT_ID, message)
+                old_message = message
         finally:
+            current_timestamp = int(time.time())
             time.sleep(RETRY_TIME)
 
 
