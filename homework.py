@@ -54,7 +54,7 @@ def get_api_answer(current_timestamp):
             ENDPOINT, headers=HEADERS, params=params)
     except Exception:
         logging.exception('Запрос от сервера не получен.')
-        raise ErorrAPI('Запрос от сервера не получен.')#
+        raise ErorrAPI('Запрос от сервера не получен.')
     if response.status_code != HTTPStatus.OK:
         raise ErorrAPI('Сервер практикума не доступен')
     return response.json()
@@ -62,7 +62,7 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """проверяет ответ API на корректность."""
-    if not isinstance(response, dict): #
+    if not isinstance(response, dict):
         logging.error('Тип  API не словарь')
         raise ErorrAPI('Тип  API не словарь')
     if 'homeworks' not in response:
