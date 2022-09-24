@@ -77,13 +77,12 @@ def check_response(response):
 def parse_status(homework):
     """Извлекает из информации о  домашней работе статус."""
     try:
-        homework_name = homework.get('homework_name')
         homework_status = homework.get('status')
         verdict = HOMEWORK_STATUSES[homework_status]
     except Exception:
         logging.exception('Неисзвестный статус.')
 
-    return f'Изменился статус проверки работы {homework_name}. {verdict}'
+    return f'Изменился статус проверки работы. {verdict}'
 
 
 def check_tokens():
