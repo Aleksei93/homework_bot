@@ -66,10 +66,8 @@ def check_response(response):
         logging.error('Тип  API не словарь')
     if 'homeworks' not in response:
         logging.error('Ответ API не содержит homeworks')
-        raise KeyError('Ключ не содержит homeworks')
     if 'current_date' not in response:
         logging.error('Ответ API не содержит current_date')
-        raise KeyError('Ключ не содержит current_date')
     if type(response['homeworks']) is not list:
         logging.error('Получен неправильный тип')
         raise Exception('Список отсуствует')
@@ -84,7 +82,6 @@ def parse_status(homework):
         verdict = HOMEWORK_STATUSES[homework_status]
     except Exception:
         logging.exception('Неисзвестный статус.')
-        raise KeyError('Неисзвестный статус ')
 
     return f'Изменился статус проверки работы {homework_name}. {verdict}'
 
