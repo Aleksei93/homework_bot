@@ -54,7 +54,7 @@ def get_api_answer(current_timestamp):
             ENDPOINT, headers=HEADERS, params=params)
     except Exception:
         logging.exception('Запрос от сервера не получен.')
-        raise ErorrAPI('Запрос от сервера не получен.')
+        raise ErorrAPI('Запрос от сервера не получен.')#
     if response.status_code != HTTPStatus.OK:
         raise ErorrAPI('Сервер практикума не доступен')
     return response.json()
@@ -62,27 +62,31 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """проверяет ответ API на корректность."""
-    if not isinstance(response, dict):
+    if not isinstance(response, dict): #
         logging.error('Тип  API не словарь')
+        raise ErorrAPI('Тип  API не словарь')
     if 'homeworks' not in response:
-        logging.error('Ответ API не содержит homeworks')
+        logging.info('Ответ API не содержит homeworks')
+        raise KeyError('Ключ не содержит homeworks')
     if 'current_date' not in response:
         logging.error('Ответ API не содержит current_date')
+        raise KeyError('отсустсвует ключ current_date')
     if type(response['homeworks']) is not list:
-        logging.error('Получен неправильный тип')
+        logging.info('Получен неправильный тип')
         raise Exception('Список отсуствует')
-    return response['homeworks'][0]
+    return response['homeworks']
 
 
 def parse_status(homework):
     """Извлекает из информации о  домашней работе статус."""
     try:
+        homework_name = homework.get('homework_name')
         homework_status = homework.get('status')
         verdict = HOMEWORK_STATUSES[homework_status]
     except Exception:
-        logging.exception('Неисзвестный статус.')
+        logging.info('Неисзвестный статус.')
 
-    return f'Изменился статус проверки работы. {verdict}'
+    return f'Изменился статус проверки работы {homework_name}. {verdict}'
 
 
 def check_tokens():
@@ -119,6 +123,7 @@ def main():
                 current_timestamp = response['current_date']
             else:
                 current_timestamp = int(time.time())
+                time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             if errors:
