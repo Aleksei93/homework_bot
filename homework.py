@@ -47,7 +47,7 @@ def send_message(bot, message):
 
 def get_api_answer(current_timestamp):
     """делает запрос к  эндпоинту API-сервиса."""
-    timestamp = current_timestamp
+    timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
     try:
         response = requests.get(
@@ -64,7 +64,6 @@ def check_response(response):
     """проверяет ответ API на корректность."""
     if not isinstance(response, dict):
         logging.error('Тип  API не словарь')
-        raise ErorrAPI('Тип  API не словарь')
     if 'homeworks' not in response:
         logging.error('Ответ API не содержит homeworks')
         raise KeyError('Ключ не содержит homeworks')
