@@ -105,7 +105,7 @@ def check_tokens():
 def main():
     """Основная логика работы бота."""
     if not check_tokens():
-        sys.exit 
+        sys.exit
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
     prev_message = ''
@@ -113,9 +113,9 @@ def main():
 
     while True:
         try:
-            response = get_api_answer(current_timestamp) #response = requests.get(ENDPOINT, headers=HEADERS, params={'from_date': timestamp})  response.json()
-            homework = check_response(response) #  response['homeworks']
-            message = parse_status(homework) # return f'Изменился статус проверки работы. {verdict}'
+            response = get_api_answer(current_timestamp)
+            homework = check_response(response)
+            message = parse_status(homework)
             if message != prev_message:
                 prev_message = message
                 send_message(bot, message)
