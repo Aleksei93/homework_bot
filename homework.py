@@ -47,7 +47,7 @@ def send_message(bot, message):
 
 def get_api_answer(current_timestamp):
     """делает запрос к  эндпоинту API-сервиса."""
-    timestamp = current_timestamp or int(time.time())
+    timestamp = 0
     params = {'from_date': timestamp}
     try:
         response = requests.get(
@@ -80,13 +80,14 @@ def check_response(response):
 def parse_status(homework):
     """Извлекает из информации о  домашней работе статус."""
     try:
+        homework_name = homework.get('homework_name')
         homework_status = homework.get('status')
         verdict = HOMEWORK_STATUSES[homework_status]
     except Exception:
         logging.exception('Неисзвестный статус.')
         raise KeyError('Неисзвестный статус ')
 
-    return f'Изменился статус проверки работы. {verdict}'
+    return f'Изменился статус проверки работы {homework_name}. {verdict}'
 
 
 def check_tokens():
