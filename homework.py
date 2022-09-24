@@ -8,8 +8,6 @@ import requests
 import telegram
 from dotenv import load_dotenv
 
-from exceptions import ErorrAPI
-
 load_dotenv()
 
 PRACTICUM_TOKEN = os.getenv('YP_TOKEN')
