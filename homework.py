@@ -2,6 +2,7 @@ import logging
 import os
 import sys
 import time
+from http import HTTPStatus
 
 import requests
 import telegram
@@ -50,7 +51,8 @@ def get_api_answer(current_timestamp):
     try:
         homework_statuses = requests.get(
             ENDPOINT, headers=HEADERS, params=params)
-        return homework_statuses.json()
+        if homework_statuses != HTTPStatus.OK:
+            return homework_statuses.json()
     except Exception as error:
         raise ErorrAPI(f'Ошибка получения request, {error}')
 
