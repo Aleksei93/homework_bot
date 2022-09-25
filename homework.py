@@ -61,16 +61,16 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """проверяет ответ API на корректность."""
-    if 'homeworks' not in response:
-        logging.info('Ответ API не содержит homeworks')
-        raise KeyError('Ключ не содержит homeworks')
-    if 'current_date' not in response:
-        raise KeyError('отсустсвует ключ current_date')
-    if type(response['homeworks']) is not list:
-        logging.info('Получен неправильный тип')
-        raise Exception('Список отсуствует')
-    homeworks = response['homeworks']
-    return homeworks
+    if type(response) is not dict: 
+        logging.error('Тип  API не словарь') 
+        raise TypeError('Тип  API не словарь') 
+    if 'homeworks' not in response: 
+        logging.error('Ответ API не содержит homeworks') 
+        raise KeyError('Ключа не содержит homeworks') 
+    if type(response['homeworks']) is not list: 
+        logging.error('Получен неправильный тип') 
+        raise Exception('Список отсуствует') 
+    return response['homeworks'] 
 
 
 def parse_status(homework):
