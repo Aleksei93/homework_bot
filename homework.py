@@ -61,8 +61,6 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """проверяет ответ API на корректность."""
-    if type(response) is not dict:
-        raise ErorrAPI('Тип  API не словарь')
     if 'homeworks' not in response:
         logging.info('Ответ API не содержит homeworks')
         raise KeyError('Ключ не содержит homeworks')
