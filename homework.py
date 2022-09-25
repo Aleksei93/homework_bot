@@ -61,7 +61,7 @@ def get_api_answer(current_timestamp):
 
 def check_response(response):
     """проверяет ответ API на корректность."""
-    if not isinstance(response, dict):
+    if isinstance(response, dict):
         raise ErorrAPI('Тип  API не словарь')
     if 'homeworks' not in response:
         logging.info('Ответ API не содержит homeworks')
