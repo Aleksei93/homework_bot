@@ -53,6 +53,8 @@ def get_api_answer(current_timestamp):
             ENDPOINT, headers=HEADERS, params=params)
         if homework_statuses != HTTPStatus.OK:
             return homework_statuses.json()
+        else:
+            raise ErorrAPI('Сервер практикума не доступен')
     except Exception as error:
         raise ErorrAPI(f'Ошибка получения request, {error}')
 
