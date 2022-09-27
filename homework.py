@@ -8,7 +8,7 @@ import requests
 import telegram
 from dotenv import load_dotenv
 
-from exceptions import ErorrAPI
+from exceptions import BadRequestError, ErorrAPI, WrongAnswerApiError
 
 load_dotenv()
 
@@ -54,21 +54,20 @@ def get_api_answer(current_timestamp):
         if homework_statuses.status_code == HTTPStatus.OK:
             return homework_statuses.json()
         else:
-            raise ErorrAPI('Сервер практикума не доступен')
+            raise WrongAnswerApiError('Сервер практикума не доступен')
     except Exception as error:
-        raise ErorrAPI(f'Ошибка получения request, {error}')
+        raise BadRequestError(f'Ошибка получения request, ошибка: {error}')
 
 
 def check_response(response):
     """проверяет ответ API на корректность."""
-    if type(response) is not dict:
-        logging.error('Тип  API не словарь')
+    if not isinstance(response, dict):
         raise TypeError('Тип  API не словарь')
     if 'homeworks' not in response:
-        logging.error('Ответ API не содержит homeworks')
-        raise KeyError('Ключа не содержит homeworks')
-    if type(response['homeworks']) is not list:
-        logging.error('Получен неправильный тип')
+        raise KeyError('Ключ  не содержит homeworks')
+    if 'current_date' not in response:
+        raise KeyError('Ключ  не содержит current_date')
+    if not isinstance(response['homeworks'], list):
         raise Exception('Список отсуствует')
     return response['homeworks']
 
@@ -106,8 +105,8 @@ def main():
 
     while True:
         try:
-            if type(current_timestamp) is not int:
-                raise SystemError('')
+            if not isinstance(current_timestamp, int):
+                raise ErorrAPI('формат current_timestamp не чило')
             response = get_api_answer(current_timestamp)
             response_time = response['current_date'] or int(time.time())
             response = check_response(response)
@@ -118,7 +117,7 @@ def main():
                     old_status = homework_status
                     send_message(bot, homework_status)
             else:
-                logger.debug('нет новых статусов')
+                logger.info('нет новых статусов')
 
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
